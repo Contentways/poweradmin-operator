@@ -8,4 +8,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: poweradmin-operator
 repo: contentways.dev/contentways/poweradmin-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: contentways.org
+  group: dns
+  kind: DNSZone
+  path: contentways.dev/contentways/poweradmin-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
