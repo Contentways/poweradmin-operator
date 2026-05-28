@@ -21,6 +21,7 @@ import (
 	"flag"
 	"os"
 
+	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -178,9 +179,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	poweradminClient, err := poweradmin.NewClient(
+		poweradmin.WithBaseURL(os.Getenv("POWERADMIN_URL")),
+		poweradmin.WithAPIKey(os.Getenv("POWERADMIN_API_KEY")),
+	)
+	if err != nil {
+		setupLog.Error(err, "Failed to create Poweradmin client")
+		os.Exit(1)
+	}
+
 	if err := (&controller.DNSZoneReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		PoweradminClient: poweradminClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "dnszone")
 		os.Exit(1)
