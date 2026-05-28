@@ -23,8 +23,11 @@ import (
 	"testing"
 	"time"
 
+	"contentways.dev/contentways/poweradmin-go/poweradmin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ctrl "sigs.k8s.io/controller-runtime"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -46,6 +49,10 @@ var (
 	testEnv   *envtest.Environment
 	cfg       *rest.Config
 	k8sClient client.Client
+
+	// Shared mocks — zwischen Tests via ExpectedCalls/Calls reset
+	sharedMockZone   *MockZoneClient
+	sharedMockRecord *MockRecordClient
 )
 
 func TestControllers(t *testing.T) {
@@ -82,6 +89,33 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+
+	sharedMockZone = &MockZoneClient{}
+	sharedMockRecord = &MockRecordClient{}
+
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:  scheme.Scheme,
+		Metrics: metricsserver.Options{BindAddress: "0"},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect((&DNSZoneReconciler{
+		Client:           k8sClient,
+		Scheme:           scheme.Scheme,
+		PoweradminClient: poweradmin.NewTestClient(sharedMockZone, sharedMockRecord),
+	}).SetupWithManager(mgr)).To(Succeed())
+
+	Expect((&DNSRecordReconciler{
+		Client:           k8sClient,
+		Scheme:           scheme.Scheme,
+		PoweradminClient: poweradmin.NewTestClient(sharedMockZone, sharedMockRecord),
+	}).SetupWithManager(mgr)).To(Succeed())
+
+	go func() {
+		defer GinkgoRecover()
+		Expect(mgr.Start(ctx)).To(Succeed())
+	}()
+
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 })

@@ -1,7 +1,0 @@
-apiVersion: dns.contentways.org/v1alpha1
-kind: DNSZone
-metadata:
-  name: test-zone
-spec:
-  name: test-operator.contentways.org
-  type: NATIVE
