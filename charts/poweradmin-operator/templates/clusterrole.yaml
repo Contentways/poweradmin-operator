@@ -1,0 +1,46 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "poweradmin-operator.fullname" . }}-manager
+  labels:
+    {{- include "poweradmin-operator.labels" . | nindent 4 }}
+rules:
+  # DNS CRDs
+  - apiGroups: ["dns.contentways.org"]
+    resources: ["dnszones", "dnsrecords"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["dns.contentways.org"]
+    resources: ["dnszones/status", "dnsrecords/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["dns.contentways.org"]
+    resources: ["dnszones/finalizers", "dnsrecords/finalizers"]
+    verbs: ["update"]
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Events
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # Namespace credentials secrets
+  - apiGroups: [ "" ]
+    resources: [ "secrets" ]
+    verbs: [ "get", "list", "watch" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "poweradmin-operator.fullname" . }}-manager
+  labels:
+    {{- include "poweradmin-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "poweradmin-operator.fullname" . }}-manager
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "poweradmin-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

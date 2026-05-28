@@ -1,0 +1,74 @@
+# Default values for poweradmin-operator.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/contentways/poweradmin-operator
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to Chart.appVersion
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Poweradmin connection settings
+poweradmin:
+  credentialsSecretName: poweradmin-credentials
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# RBAC — ClusterRole + ClusterRoleBinding for CRD access
+rbac:
+  create: true
+
+# Install CRDs via the chart (alternative: use `make install`)
+crds:
+  install: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+# Leader election — enable for HA (replicaCount > 1)
+leaderElection:
+  enabled: false
+
+# Metrics server
+metrics:
+  enabled: true
+  bindAddress: ":8443"
+  secure: true
+  service:
+    type: ClusterIP
+    port: 8443
+
+# Health probe
+healthProbe:
+  bindAddress: ":8081"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  seccompProfile:
+    type: RuntimeDefault

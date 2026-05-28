@@ -1,0 +1,16 @@
+apiVersion: v2
+name: poweradmin-operator
+description: A Kubernetes operator for managing DNS zones and records via Poweradmin
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - dns
+  - poweradmin
+  - operator
+home: https://contentways.dev/contentways/poweradmin-operator
+sources:
+  - https://contentways.dev/contentways/poweradmin-operator
+maintainers:
+  - name: Patrick Omland
+    email: info@contentways.org

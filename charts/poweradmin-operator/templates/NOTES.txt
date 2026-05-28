@@ -1,0 +1,38 @@
+poweradmin-operator has been deployed successfully.
+
+Operator namespace: {{ .Release.Namespace }}
+Operator version:   {{ .Chart.AppVersion }}
+
+To verify the operator is running:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "poweradmin-operator.name" . }}
+
+To create a DNS zone:
+  kubectl apply -f - <<EOF
+  apiVersion: dns.contentways.org/v1alpha1
+  kind: DNSZone
+  metadata:
+    name: my-zone
+    namespace: default
+  spec:
+    name: example.org
+    type: NATIVE
+  EOF
+
+To create a DNS record:
+  kubectl apply -f - <<EOF
+  apiVersion: dns.contentways.org/v1alpha1
+  kind: DNSRecord
+  metadata:
+    name: www-example
+    namespace: default
+  spec:
+    zoneName: example.org
+    name: www
+    type: A
+    content: 1.2.3.4
+    ttl: 3600
+  EOF
+
+Check zone status:
+  kubectl get dnszones
+  kubectl get dnsrecords

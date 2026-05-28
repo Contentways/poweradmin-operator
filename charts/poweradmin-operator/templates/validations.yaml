@@ -1,0 +1,3 @@
+{{- if not .Values.poweradmin.credentialsSecretName -}}
+{{- fail "poweradmin.credentialsSecretName must be set" -}}
+{{- end }}
