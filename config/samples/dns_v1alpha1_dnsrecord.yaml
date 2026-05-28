@@ -1,0 +1,9 @@
+apiVersion: dns.contentways.org/v1alpha1
+kind: DNSRecord
+metadata:
+  labels:
+    app.kubernetes.io/name: poweradmin-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: dnsrecord-sample
+spec:
+  # TODO(user): Add fields here

@@ -22,6 +22,9 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the poweradmin-operator itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- dnsrecord_admin_role.yaml
+- dnsrecord_editor_role.yaml
+- dnsrecord_viewer_role.yaml
 - dnszone_admin_role.yaml
 - dnszone_editor_role.yaml
 - dnszone_viewer_role.yaml

@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/dns.contentways.org_dnszones.yaml
+- bases/dns.contentways.org_dnsrecords.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

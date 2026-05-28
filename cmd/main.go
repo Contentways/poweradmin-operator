@@ -196,6 +196,14 @@ func main() {
 		setupLog.Error(err, "Failed to create controller", "controller", "dnszone")
 		os.Exit(1)
 	}
+	if err := (&controller.DNSRecordReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		PoweradminClient: poweradminClient,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "dnsrecord")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

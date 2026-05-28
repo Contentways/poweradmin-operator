@@ -3,6 +3,7 @@ module contentways.dev/contentways/poweradmin-operator
 go 1.26.3
 
 require (
+	contentways.dev/contentways/poweradmin-go v0.2.2
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	k8s.io/apimachinery v0.35.0
@@ -12,7 +13,6 @@ require (
 
 require (
 	cel.dev/expr v0.24.0 // indirect
-	contentways.dev/contentways/poweradmin-go v0.2.2 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
