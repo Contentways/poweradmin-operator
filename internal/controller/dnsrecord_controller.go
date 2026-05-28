@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -37,30 +39,36 @@ const recordFinalizerName = "dns.contentways.org/record-finalizer"
 // DNSRecordReconciler reconciles a DNSRecord object.
 type DNSRecordReconciler struct {
 	client.Client
-	Scheme           *runtime.Scheme
-	PoweradminClient *poweradmin.Client
+	Scheme                *runtime.Scheme
+	CredentialsSecretName string
+	// NewClient can be overridden in tests to inject a mock client.
+	// If nil, credentials are read from the namespace Secret.
+	NewClient func(url, apiKey string) (*poweradmin.Client, error)
 }
 
 // +kubebuilder:rbac:groups=dns.contentways.org,resources=dnsrecords,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=dns.contentways.org,resources=dnsrecords/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=dns.contentways.org,resources=dnsrecords/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 // Reconcile moves the current state of the DNSRecord closer to the desired state.
 func (r *DNSRecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
-	// 1. Fetch the DNSRecord CR.
 	record := &dnsv1alpha1.DNSRecord{}
 	if err := r.Get(ctx, req.NamespacedName, record); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// 2. Handle deletion.
-	if !record.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, record)
+	paClient, err := r.buildClient(ctx, req.Namespace)
+	if err != nil {
+		return ctrl.Result{}, r.setConditionFailed(ctx, record, "CredentialsNotFound", err.Error())
 	}
 
-	// 3. Ensure finalizer is set.
+	if !record.DeletionTimestamp.IsZero() {
+		return r.reconcileDelete(ctx, record, paClient)
+	}
+
 	if !controllerutil.ContainsFinalizer(record, recordFinalizerName) {
 		controllerutil.AddFinalizer(record, recordFinalizerName)
 		if err := r.Update(ctx, record); err != nil {
@@ -69,24 +77,22 @@ func (r *DNSRecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// 4. Resolve zone ID from zone name.
-	zoneID, err := r.resolveZoneID(ctx, record.Spec.ZoneName)
+	zoneID, err := r.resolveZoneID(ctx, record.Spec.ZoneName, paClient)
 	if err != nil {
 		return ctrl.Result{}, r.setConditionFailed(ctx, record, "ZoneNotFound", fmt.Sprintf("resolve zone %s: %s", record.Spec.ZoneName, err))
 	}
 
-	// 5. Reconcile desired state.
 	if record.Status.RecordId == 0 {
 		log.Info("Creating record in Poweradmin", "zone", record.Spec.ZoneName, "name", record.Spec.Name, "type", record.Spec.Type)
-		return r.reconcileCreate(ctx, record, zoneID)
+		return r.reconcileCreate(ctx, record, zoneID, paClient)
 	}
 
 	log.Info("Updating record in Poweradmin", "zone", record.Spec.ZoneName, "name", record.Spec.Name, "id", record.Status.RecordId)
-	return r.reconcileUpdate(ctx, record)
+	return r.reconcileUpdate(ctx, record, paClient)
 }
 
-func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1alpha1.DNSRecord, zoneID int) (ctrl.Result, error) {
-	id, _, err := r.PoweradminClient.Record.Create(ctx, int(zoneID), poweradmin.RecordCreateOpts{
+func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1alpha1.DNSRecord, zoneID int, paClient *poweradmin.Client) (ctrl.Result, error) {
+	id, _, err := paClient.Record.Create(ctx, zoneID, poweradmin.RecordCreateOpts{
 		Name:     record.Spec.Name,
 		Type:     record.Spec.Type,
 		Content:  record.Spec.Content,
@@ -95,48 +101,46 @@ func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1
 		Disabled: record.Spec.Disabled,
 	})
 	if err != nil {
-		return ctrl.Result{}, r.setConditionFailed(ctx, record, "SyncFailed", fmt.Sprintf("create record: %s", err))
+		return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonSyncFailed, fmt.Sprintf("create record: %s", err))
 	}
 
 	record.Status.RecordId = int(id)
 	record.Status.ZoneId = zoneID
-	r.setConditionReady(record, "Synced", "Record created successfully")
+	r.setConditionReady(record, reasonSynced, "Record created successfully")
 
 	if err := r.Status().Update(ctx, record); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after create: %w", err)
 	}
-
 	return ctrl.Result{}, nil
 }
 
-func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1alpha1.DNSRecord) (ctrl.Result, error) {
-	_, _, err := r.PoweradminClient.Record.Update(ctx, record.Status.ZoneId, int64(record.Status.RecordId), poweradmin.RecordUpdateOpts{
+func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {
+	_, _, err := paClient.Record.Update(ctx, record.Status.ZoneId, int64(record.Status.RecordId), poweradmin.RecordUpdateOpts{
 		Name:    record.Spec.Name,
 		Type:    record.Spec.Type,
 		Content: record.Spec.Content,
 		TTL:     &record.Spec.TTL,
 	})
 	if err != nil {
-		return ctrl.Result{}, r.setConditionFailed(ctx, record, "SyncFailed", fmt.Sprintf("update record: %s", err))
+		return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonSyncFailed, fmt.Sprintf("update record: %s", err))
 	}
 
-	r.setConditionReady(record, "Synced", "Record synced successfully")
+	r.setConditionReady(record, reasonSynced, "Record synced successfully")
 
 	if err := r.Status().Update(ctx, record); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after update: %w", err)
 	}
-
 	return ctrl.Result{}, nil
 }
 
-func (r *DNSRecordReconciler) reconcileDelete(ctx context.Context, record *dnsv1alpha1.DNSRecord) (ctrl.Result, error) {
+func (r *DNSRecordReconciler) reconcileDelete(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
 	if record.Status.RecordId != 0 {
 		log.Info("Deleting record from Poweradmin", "name", record.Spec.Name, "id", record.Status.RecordId)
-		_, err := r.PoweradminClient.Record.Delete(ctx, int(record.Status.ZoneId), int64(record.Status.RecordId))
+		_, err := paClient.Record.Delete(ctx, record.Status.ZoneId, int64(record.Status.RecordId))
 		if err != nil && !poweradmin.IsNotFound(err) {
-			return ctrl.Result{}, r.setConditionFailed(ctx, record, "DeleteFailed", fmt.Sprintf("delete record: %s", err))
+			return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonDeleteFailed, fmt.Sprintf("delete record: %s", err))
 		}
 	}
 
@@ -149,16 +153,45 @@ func (r *DNSRecordReconciler) reconcileDelete(ctx context.Context, record *dnsv1
 	return ctrl.Result{}, nil
 }
 
-// resolveZoneID looks up the zone ID by name from Poweradmin.
-func (r *DNSRecordReconciler) resolveZoneID(ctx context.Context, zoneName string) (int, error) {
-	zone, _, err := r.PoweradminClient.Zone.GetByName(ctx, zoneName)
+func (r *DNSRecordReconciler) resolveZoneID(ctx context.Context, zoneName string, paClient *poweradmin.Client) (int, error) {
+	zone, _, err := paClient.Zone.GetByName(ctx, zoneName)
 	if err != nil {
 		return 0, err
 	}
 	return zone.ID, nil
 }
 
-// setConditionReady sets the Ready condition to True (in-memory only).
+// buildClient returns a Poweradmin client. In tests, NewClient can be overridden.
+func (r *DNSRecordReconciler) buildClient(ctx context.Context, namespace string) (*poweradmin.Client, error) {
+	if r.NewClient != nil {
+		return r.NewClient("", "")
+	}
+	return r.newPoweradminClient(ctx, namespace)
+}
+
+// newPoweradminClient reads credentials from the namespace Secret and builds a client.
+func (r *DNSRecordReconciler) newPoweradminClient(ctx context.Context, namespace string) (*poweradmin.Client, error) {
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      r.CredentialsSecretName,
+		Namespace: namespace,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("get credentials secret %q in namespace %q: %w", r.CredentialsSecretName, namespace, err)
+	}
+
+	url := string(secret.Data["POWERADMIN_URL"])
+	apiKey := string(secret.Data["POWERADMIN_API_KEY"])
+
+	if url == "" || apiKey == "" {
+		return nil, fmt.Errorf("secret %q in namespace %q must contain POWERADMIN_URL and POWERADMIN_API_KEY", r.CredentialsSecretName, namespace)
+	}
+
+	return poweradmin.NewClient(
+		poweradmin.WithBaseURL(url),
+		poweradmin.WithAPIKey(apiKey),
+	)
+}
+
 func (r *DNSRecordReconciler) setConditionReady(record *dnsv1alpha1.DNSRecord, reason, message string) {
 	meta.SetStatusCondition(&record.Status.Conditions, metav1.Condition{
 		Type:               conditionReady,
@@ -169,7 +202,6 @@ func (r *DNSRecordReconciler) setConditionReady(record *dnsv1alpha1.DNSRecord, r
 	})
 }
 
-// setConditionFailed sets the Ready condition to False, updates status, and returns the error.
 func (r *DNSRecordReconciler) setConditionFailed(ctx context.Context, record *dnsv1alpha1.DNSRecord, reason, message string) error {
 	meta.SetStatusCondition(&record.Status.Conditions, metav1.Condition{
 		Type:               conditionReady,

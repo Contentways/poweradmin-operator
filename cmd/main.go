@@ -21,7 +21,7 @@ import (
 	"flag"
 	"os"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	"contentways.dev/contentways/poweradmin-operator/internal/controller"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
-	"contentways.dev/contentways/poweradmin-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -80,6 +79,9 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	var credentialsSecretName string
+	flag.StringVar(&credentialsSecretName, "credentials-secret-name", "poweradmin-credentials",
+		"Name of the Secret containing POWERADMIN_URL and POWERADMIN_API_KEY in each namespace.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -179,32 +181,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	poweradminClient, err := poweradmin.NewClient(
-		poweradmin.WithBaseURL(os.Getenv("POWERADMIN_URL")),
-		poweradmin.WithAPIKey(os.Getenv("POWERADMIN_API_KEY")),
-	)
-	if err != nil {
-		setupLog.Error(err, "Failed to create Poweradmin client")
-		os.Exit(1)
-	}
-
+	// +kubebuilder:scaffold:builder
 	if err := (&controller.DNSZoneReconciler{
-		Client:           mgr.GetClient(),
-		Scheme:           mgr.GetScheme(),
-		PoweradminClient: poweradminClient,
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		CredentialsSecretName: credentialsSecretName,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "dnszone")
 		os.Exit(1)
 	}
+
 	if err := (&controller.DNSRecordReconciler{
-		Client:           mgr.GetClient(),
-		Scheme:           mgr.GetScheme(),
-		PoweradminClient: poweradminClient,
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		CredentialsSecretName: credentialsSecretName,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "dnsrecord")
 		os.Exit(1)
 	}
-	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "Failed to set up health check")

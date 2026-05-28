@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"contentways.dev/contentways/poweradmin-go/poweradmin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -36,12 +35,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
-
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
 	ctx       context.Context
@@ -50,14 +47,12 @@ var (
 	cfg       *rest.Config
 	k8sClient client.Client
 
-	// Shared mocks — zwischen Tests via ExpectedCalls/Calls reset
 	sharedMockZone   *MockZoneClient
 	sharedMockRecord *MockRecordClient
 )
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
-
 	RunSpecs(t, "Controller Suite")
 }
 
@@ -78,17 +73,17 @@ var _ = BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 	}
 
-	// Retrieve the first found binary directory to allow running tests from IDEs
 	if getFirstFoundEnvTestBinaryDir() != "" {
 		testEnv.BinaryAssetsDirectory = getFirstFoundEnvTestBinaryDir()
 	}
 
-	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(k8sClient).NotTo(BeNil())
 
 	sharedMockZone = &MockZoneClient{}
 	sharedMockRecord = &MockRecordClient{}
@@ -100,24 +95,27 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect((&DNSZoneReconciler{
-		Client:           k8sClient,
-		Scheme:           scheme.Scheme,
-		PoweradminClient: poweradmin.NewTestClient(sharedMockZone, sharedMockRecord),
+		Client:                k8sClient,
+		Scheme:                scheme.Scheme,
+		CredentialsSecretName: "poweradmin-credentials",
+		NewClient: func(_, _ string) (*poweradmin.Client, error) {
+			return poweradmin.NewTestClient(sharedMockZone, sharedMockRecord), nil
+		},
 	}).SetupWithManager(mgr)).To(Succeed())
 
 	Expect((&DNSRecordReconciler{
-		Client:           k8sClient,
-		Scheme:           scheme.Scheme,
-		PoweradminClient: poweradmin.NewTestClient(sharedMockZone, sharedMockRecord),
+		Client:                k8sClient,
+		Scheme:                scheme.Scheme,
+		CredentialsSecretName: "poweradmin-credentials",
+		NewClient: func(_, _ string) (*poweradmin.Client, error) {
+			return poweradmin.NewTestClient(sharedMockZone, sharedMockRecord), nil
+		},
 	}).SetupWithManager(mgr)).To(Succeed())
 
 	go func() {
 		defer GinkgoRecover()
 		Expect(mgr.Start(ctx)).To(Succeed())
 	}()
-
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
 })
 
 var _ = AfterSuite(func() {
@@ -128,14 +126,6 @@ var _ = AfterSuite(func() {
 	}, time.Minute, time.Second).Should(Succeed())
 })
 
-// getFirstFoundEnvTestBinaryDir locates the first binary in the specified path.
-// ENVTEST-based tests depend on specific binaries, usually located in paths set by
-// controller-runtime. When running tests directly (e.g., via an IDE) without using
-// Makefile targets, the 'BinaryAssetsDirectory' must be explicitly configured.
-//
-// This function streamlines the process by finding the required binaries, similar to
-// setting the 'KUBEBUILDER_ASSETS' environment variable. To ensure the binaries are
-// properly set up, run 'make setup-envtest' beforehand.
 func getFirstFoundEnvTestBinaryDir() string {
 	basePath := filepath.Join("..", "..", "bin", "k8s")
 	entries, err := os.ReadDir(basePath)
