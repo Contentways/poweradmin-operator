@@ -28,4 +28,3 @@ resources:
 - dnszone_admin_role.yaml
 - dnszone_editor_role.yaml
 - dnszone_viewer_role.yaml
-
