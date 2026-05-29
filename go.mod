@@ -3,7 +3,7 @@ module contentways.dev/contentways/poweradmin-operator
 go 1.26.3
 
 require (
-	contentways.dev/contentways/poweradmin-go v0.2.4
+	contentways.dev/contentways/poweradmin-go v1.0.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/stretchr/testify v1.11.1
