@@ -103,6 +103,19 @@ func (r *DNSZoneReconciler) reconcileCreate(ctx context.Context, zone *dnsv1alph
 		return ctrl.Result{}, r.setConditionFailed(ctx, zone, reasonSyncFailed, fmt.Sprintf("create zone: %s", err))
 	}
 
+	// Create NS records for each nameserver
+	for _, ns := range zone.Spec.Nameservers {
+		_, _, err := paClient.Record.Create(ctx, id, poweradmin.RecordCreateOpts{
+			Name:    zone.Spec.Name,
+			Type:    "NS",
+			Content: ns,
+			TTL:     3600,
+		})
+		if err != nil {
+			return ctrl.Result{}, r.setConditionFailed(ctx, zone, reasonSyncFailed, fmt.Sprintf("create NS record for %s: %s", ns, err))
+		}
+	}
+
 	zone.Status.ZoneId = id
 	r.setConditionReady(zone, reasonSynced, "Zone created successfully")
 

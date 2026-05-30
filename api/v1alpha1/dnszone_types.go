@@ -12,6 +12,11 @@ type DNSZoneSpec struct {
 	Type string `json:"type,omitempty"`
 
 	Masters string `json:"masters,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=2
+	// +listType=set
+	Nameservers []string `json:"nameservers"`
 }
 
 // DNSZoneStatus defines the observed state of a DNSZone.

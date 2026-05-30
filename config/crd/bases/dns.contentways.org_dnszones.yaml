@@ -56,6 +56,12 @@ spec:
                 type: string
               name:
                 type: string
+              nameservers:
+                items:
+                  type: string
+                minItems: 2
+                type: array
+                x-kubernetes-list-type: set
               type:
                 default: NATIVE
                 enum:
@@ -65,6 +71,7 @@ spec:
                 type: string
             required:
             - name
+            - nameservers
             type: object
           status:
             description: DNSZoneStatus defines the observed state of a DNSZone.
