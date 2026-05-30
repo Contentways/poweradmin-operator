@@ -12,10 +12,13 @@ To create a DNS zone:
   kind: DNSZone
   metadata:
     name: my-zone
-    namespace: default
+    namespace: {{ .Release.Namespace }}
   spec:
     name: example.org
     type: NATIVE
+    nameservers:
+      - ns1.example.org
+      - ns2.example.org
   EOF
 
 To create a DNS record:
@@ -24,7 +27,7 @@ To create a DNS record:
   kind: DNSRecord
   metadata:
     name: www-example
-    namespace: default
+    namespace: {{ .Release.Namespace }}
   spec:
     zoneName: example.org
     name: www
