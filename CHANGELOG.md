@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.2](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.2)
+
+### Bug Fixes
+
+- correct zoneID and recordID field names in status
+
 ## [v1.0.1](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.1)
 
 ### Bug Fixes
