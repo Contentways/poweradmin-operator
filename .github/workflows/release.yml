@@ -48,7 +48,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Install Helm
-        uses: azure/setup-helm@b9e51907a09c216c27f6f07cfd0b3cdde4ec70e3 # v4.3.0
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
 
       - name: Package and push Helm chart
         run: |
