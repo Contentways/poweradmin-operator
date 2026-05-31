@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.3](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.3)
+
+### Bug Fixes
+
+- correct zoneID json tag in DNSRecord status
+
 ## [v1.0.2](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.2)
 
 ### Bug Fixes
