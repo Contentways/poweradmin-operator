@@ -37,14 +37,11 @@ var _ = Describe("DNSZoneReconciler", func() {
 	)
 
 	var mockZone *MockZoneClient
+	var mockRecord *MockRecordClient
 
 	BeforeEach(func() {
 		mockZone = sharedMockZone
-		mockZone.ExpectedCalls = nil
-		mockZone.Calls = nil
-	})
-
-	BeforeEach(func() {
+		mockRecord = sharedMockRecord
 		mockZone.ExpectedCalls = nil
 		mockZone.Calls = nil
 	})
@@ -57,6 +54,18 @@ var _ = Describe("DNSZoneReconciler", func() {
 			}).Return(42, nil, nil)
 			mockZone.On("Update", mock.Anything, 42, mock.Anything).Return(&poweradmin.Zone{ID: 42}, nil, nil).Maybe()
 			mockZone.On("Delete", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			mockRecord.On("Create", mock.Anything, 42, poweradmin.RecordCreateOpts{
+				Name:    "test-create.example.org",
+				Type:    "NS",
+				Content: "ns1.example.org",
+				TTL:     3600,
+			}).Return(int64(1), nil, nil)
+			mockRecord.On("Create", mock.Anything, 42, poweradmin.RecordCreateOpts{
+				Name:    "test-create.example.org",
+				Type:    "NS",
+				Content: "ns2.example.org",
+				TTL:     3600,
+			}).Return(int64(2), nil, nil)
 
 			zone := &dnsv1alpha1.DNSZone{
 				ObjectMeta: metav1.ObjectMeta{
@@ -64,8 +73,9 @@ var _ = Describe("DNSZoneReconciler", func() {
 					Namespace: "default",
 				},
 				Spec: dnsv1alpha1.DNSZoneSpec{
-					Name: "test-create.example.org",
-					Type: "NATIVE",
+					Name:        "test-create.example.org",
+					Type:        "NATIVE",
+					Nameservers: []string{"ns1.example.org", "ns2.example.org"},
 				},
 			}
 			Expect(k8sClient.Create(context.Background(), zone)).To(Succeed())
@@ -91,6 +101,19 @@ var _ = Describe("DNSZoneReconciler", func() {
 			mockZone.On("Create", mock.Anything, mock.Anything).Return(99, nil, nil)
 			mockZone.On("Update", mock.Anything, 99, mock.Anything).Return(&poweradmin.Zone{ID: 99}, nil, nil).Maybe()
 			mockZone.On("Delete", mock.Anything, 99).Return(nil, nil)
+			mockZone.On("Delete", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+			mockRecord.On("Create", mock.Anything, 99, poweradmin.RecordCreateOpts{
+				Name:    "test-delete.example.org",
+				Type:    "NS",
+				Content: "ns1.example.org",
+				TTL:     3600,
+			}).Return(int64(1), nil, nil)
+			mockRecord.On("Create", mock.Anything, 99, poweradmin.RecordCreateOpts{
+				Name:    "test-delete.example.org",
+				Type:    "NS",
+				Content: "ns2.example.org",
+				TTL:     3600,
+			}).Return(int64(2), nil, nil)
 
 			zone := &dnsv1alpha1.DNSZone{
 				ObjectMeta: metav1.ObjectMeta{
@@ -98,8 +121,9 @@ var _ = Describe("DNSZoneReconciler", func() {
 					Namespace: "default",
 				},
 				Spec: dnsv1alpha1.DNSZoneSpec{
-					Name: "test-delete.example.org",
-					Type: "NATIVE",
+					Name:        "test-delete.example.org",
+					Type:        "NATIVE",
+					Nameservers: []string{"ns1.example.org", "ns2.example.org"},
 				},
 			}
 			Expect(k8sClient.Create(context.Background(), zone)).To(Succeed())
