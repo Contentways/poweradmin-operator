@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.1](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.1)
+
+### Bug Fixes
+
+- update chart image to ghcr.io, fix CRD field names, add Chart.yaml to releaser-pleaser
+
 ## [v0.1.0](https://github.com/Contentways/poweradmin-operator/releases/tag/v0.1.0)
 
 ### Features
