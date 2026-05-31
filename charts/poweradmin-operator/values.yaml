@@ -3,9 +3,9 @@
 replicaCount: 1
 
 image:
-  repository: registry.contentways.dev/contentways/poweradmin-operator
+  repository: ghcr.io/contentways/poweradmin-operator
   pullPolicy: IfNotPresent
-  tag: "v1.0.0"
+  tag: ""
 
 imagePullSecrets: []
 
