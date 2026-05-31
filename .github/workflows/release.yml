@@ -1,0 +1,56 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+permissions: {}
+jobs:
+  release:
+    permissions:
+      contents: read
+      packages: write
+    name: Build and push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract tag name
+        id: tag
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/contentways/poweradmin-operator:${{ steps.tag.outputs.version }}
+            ghcr.io/contentways/poweradmin-operator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install Helm
+        uses: azure/setup-helm@b9e51907a09c216c27f6f07cfd0b3cdde4ec70e3 # v4.3.0
+
+      - name: Package and push Helm chart
+        run: |
+          helm package charts/poweradmin-operator --version ${{ steps.tag.outputs.version }} --app-version ${{ steps.tag.outputs.version }}
+          helm push poweradmin-operator-${{ steps.tag.outputs.version }}.tgz oci://ghcr.io/contentways/charts
