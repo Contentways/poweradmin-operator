@@ -21,7 +21,7 @@ type DNSZoneSpec struct {
 
 // DNSZoneStatus defines the observed state of a DNSZone.
 type DNSZoneStatus struct {
-	ZoneId int `json:"zoneId,omitempty"`
+	ZoneID int `json:"zoneID,omitempty"`
 
 	// +listType=map
 	// +listMapKey=type
@@ -34,7 +34,7 @@ type DNSZoneStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Zone",type=string,JSONPath=`.spec.name`
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.type`
-// +kubebuilder:printcolumn:name="ID",type=integer,JSONPath=`.status.zoneId`
+// +kubebuilder:printcolumn:name="ID",type=integer,JSONPath=`.status.zoneID`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 type DNSZone struct {
 	metav1.TypeMeta   `json:",inline"`

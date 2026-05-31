@@ -81,7 +81,7 @@ var _ = Describe("DNSRecordReconciler", func() {
 			Eventually(func() int {
 				updated := &dnsv1alpha1.DNSRecord{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-create", Namespace: "default"}, updated)
-				return updated.Status.RecordId
+				return updated.Status.RecordID
 			}, timeout, interval).Should(Equal(100))
 
 			updated := &dnsv1alpha1.DNSRecord{}
@@ -119,7 +119,7 @@ var _ = Describe("DNSRecordReconciler", func() {
 			Eventually(func() int {
 				updated := &dnsv1alpha1.DNSRecord{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-delete", Namespace: "default"}, updated)
-				return updated.Status.RecordId
+				return updated.Status.RecordID
 			}, timeout, interval).Should(Equal(200))
 
 			updated := &dnsv1alpha1.DNSRecord{}

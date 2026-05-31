@@ -23,4 +23,5 @@ linters:
       - linters:
           - errcheck
           - gosec
+          - revive
         path: _test\.go

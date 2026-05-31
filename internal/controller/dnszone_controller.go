@@ -84,12 +84,12 @@ func (r *DNSZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if zone.Status.ZoneId == 0 {
+	if zone.Status.ZoneID == 0 {
 		log.Info("Creating zone in Poweradmin", "zone", zone.Spec.Name)
 		return r.reconcileCreate(ctx, zone, paClient)
 	}
 
-	log.Info("Updating zone in Poweradmin", "zone", zone.Spec.Name, "id", zone.Status.ZoneId)
+	log.Info("Updating zone in Poweradmin", "zone", zone.Spec.Name, "id", zone.Status.ZoneID)
 	return r.reconcileUpdate(ctx, zone, paClient)
 }
 
@@ -116,7 +116,7 @@ func (r *DNSZoneReconciler) reconcileCreate(ctx context.Context, zone *dnsv1alph
 		}
 	}
 
-	zone.Status.ZoneId = id
+	zone.Status.ZoneID = id
 	r.setConditionReady(zone, reasonSynced, "Zone created successfully")
 
 	if err := r.Status().Update(ctx, zone); err != nil {
@@ -127,7 +127,7 @@ func (r *DNSZoneReconciler) reconcileCreate(ctx context.Context, zone *dnsv1alph
 
 func (r *DNSZoneReconciler) reconcileUpdate(ctx context.Context, zone *dnsv1alpha1.DNSZone, paClient *poweradmin.Client) (ctrl.Result, error) {
 	zoneType := poweradmin.ZoneType(zone.Spec.Type)
-	_, _, err := paClient.Zone.Update(ctx, zone.Status.ZoneId, poweradmin.ZoneUpdateOpts{
+	_, _, err := paClient.Zone.Update(ctx, zone.Status.ZoneID, poweradmin.ZoneUpdateOpts{
 		Type:    &zoneType,
 		Masters: &zone.Spec.Masters,
 	})
@@ -146,9 +146,9 @@ func (r *DNSZoneReconciler) reconcileUpdate(ctx context.Context, zone *dnsv1alph
 func (r *DNSZoneReconciler) reconcileDelete(ctx context.Context, zone *dnsv1alpha1.DNSZone, paClient *poweradmin.Client) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
-	if zone.Status.ZoneId != 0 {
-		log.Info("Deleting zone from Poweradmin", "zone", zone.Spec.Name, "id", zone.Status.ZoneId)
-		_, err := paClient.Zone.Delete(ctx, zone.Status.ZoneId)
+	if zone.Status.ZoneID != 0 {
+		log.Info("Deleting zone from Poweradmin", "zone", zone.Spec.Name, "id", zone.Status.ZoneID)
+		_, err := paClient.Zone.Delete(ctx, zone.Status.ZoneID)
 		if err != nil && !poweradmin.IsNotFound(err) {
 			return ctrl.Result{}, r.setConditionFailed(ctx, zone, reasonDeleteFailed, fmt.Sprintf("delete zone: %s", err))
 		}

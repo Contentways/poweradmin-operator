@@ -83,7 +83,7 @@ var _ = Describe("DNSZoneReconciler", func() {
 			Eventually(func() int {
 				updated := &dnsv1alpha1.DNSZone{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-create", Namespace: "default"}, updated)
-				return updated.Status.ZoneId
+				return updated.Status.ZoneID
 			}, timeout, interval).Should(Equal(42))
 
 			updated := &dnsv1alpha1.DNSZone{}
@@ -131,7 +131,7 @@ var _ = Describe("DNSZoneReconciler", func() {
 			Eventually(func() int {
 				updated := &dnsv1alpha1.DNSZone{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-delete", Namespace: "default"}, updated)
-				return updated.Status.ZoneId
+				return updated.Status.ZoneID
 			}, timeout, interval).Should(Equal(99))
 
 			updated := &dnsv1alpha1.DNSZone{}

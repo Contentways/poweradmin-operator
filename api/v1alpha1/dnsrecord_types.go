@@ -29,8 +29,8 @@ type DNSRecordSpec struct {
 
 // DNSRecordStatus defines the observed state of a DNSRecord.
 type DNSRecordStatus struct {
-	RecordId int `json:"recordId,omitempty"`
-	ZoneId   int `json:"zoneId,omitempty"`
+	RecordID int `json:"recordID,omitempty"`
+	ZoneID   int `json:"zoneId,omitempty"`
 
 	// +listType=map
 	// +listMapKey=type
