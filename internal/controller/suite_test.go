@@ -99,7 +99,10 @@ var _ = BeforeSuite(func() {
 		Scheme:                scheme.Scheme,
 		CredentialsSecretName: "poweradmin-credentials",
 		NewClient: func(_, _ string) (*poweradmin.Client, error) {
-			return poweradmin.NewTestClient(sharedMockZone, sharedMockRecord), nil
+			return &poweradmin.Client{
+				Zone: sharedMockZone,
+				Record: sharedMockRecord,
+			}, nil
 		},
 	}).SetupWithManager(mgr)).To(Succeed())
 
@@ -108,7 +111,10 @@ var _ = BeforeSuite(func() {
 		Scheme:                scheme.Scheme,
 		CredentialsSecretName: "poweradmin-credentials",
 		NewClient: func(_, _ string) (*poweradmin.Client, error) {
-			return poweradmin.NewTestClient(sharedMockZone, sharedMockRecord), nil
+			return &poweradmin.Client{
+				Zone: sharedMockZone,
+				Record: sharedMockRecord,
+			}, nil
 		},
 	}).SetupWithManager(mgr)).To(Succeed())
 
