@@ -156,7 +156,7 @@ spec:
                 x-kubernetes-list-type: map
               recordID:
                 type: integer
-              zoneId:
+              zoneID:
                 type: integer
             type: object
         required:
