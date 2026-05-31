@@ -1,0 +1,11 @@
+apiVersion: dns.contentways.org/v1alpha1
+kind: DNSRecord
+metadata:
+  name: www-example-org
+  namespace: default
+spec:
+  zoneName: example.org
+  name: www.example.org
+  type: A
+  content: 1.2.3.4
+  ttl: 3600

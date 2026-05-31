@@ -1,0 +1,11 @@
+apiVersion: dns.contentways.org/v1alpha1
+kind: DNSZone
+metadata:
+  name: example-org
+  namespace: default
+spec:
+  name: example.org
+  type: NATIVE
+  nameservers:
+    - ns1.example.org
+    - ns2.example.org
