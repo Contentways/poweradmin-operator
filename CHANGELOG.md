@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.4](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.4)
+
+### Bug Fixes
+
+- add periodic requeue and handle external deletion in zone and record controllers
+
 ## [v1.0.3](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.3)
 
 ### Bug Fixes
