@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -74,7 +75,7 @@ func (r *DNSRecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err := r.Update(ctx, record); err != nil {
 			return ctrl.Result{}, fmt.Errorf("add finalizer: %w", err)
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	zoneID, err := r.resolveZoneID(ctx, record.Spec.ZoneName, paClient)
@@ -111,7 +112,7 @@ func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1
 	if err := r.Status().Update(ctx, record); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after create: %w", err)
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
 func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {
@@ -122,7 +123,15 @@ func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1
 		TTL:     &record.Spec.TTL,
 	})
 	if err != nil {
-		return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonSyncFailed, fmt.Sprintf("update record: %s", err))
+		if poweradmin.IsNotFound(err) {
+			record.Status.RecordID = 0
+			record.Status.ZoneID = 0
+			if err := r.Status().Update(ctx, record); err != nil {
+				return ctrl.Result{}, fmt.Errorf("reset after external deletion: %w", err)
+			}
+			return ctrl.Result{RequeueAfter: time.Second}, nil
+		}
+		return ctrl.Result{RequeueAfter: 5 * time.Minute}, r.setConditionFailed(ctx, record, reasonSyncFailed, fmt.Sprintf("update record: %s", err))
 	}
 
 	r.setConditionReady(record, reasonSynced, "Record synced successfully")
@@ -130,7 +139,7 @@ func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1
 	if err := r.Status().Update(ctx, record); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after update: %w", err)
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
 func (r *DNSRecordReconciler) reconcileDelete(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {

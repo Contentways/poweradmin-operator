@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -81,7 +82,7 @@ func (r *DNSZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err := r.Update(ctx, zone); err != nil {
 			return ctrl.Result{}, fmt.Errorf("add finalizer: %w", err)
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	if zone.Status.ZoneID == 0 {
@@ -122,7 +123,7 @@ func (r *DNSZoneReconciler) reconcileCreate(ctx context.Context, zone *dnsv1alph
 	if err := r.Status().Update(ctx, zone); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after create: %w", err)
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
 func (r *DNSZoneReconciler) reconcileUpdate(ctx context.Context, zone *dnsv1alpha1.DNSZone, paClient *poweradmin.Client) (ctrl.Result, error) {
@@ -132,7 +133,14 @@ func (r *DNSZoneReconciler) reconcileUpdate(ctx context.Context, zone *dnsv1alph
 		Masters: &zone.Spec.Masters,
 	})
 	if err != nil {
-		return ctrl.Result{}, r.setConditionFailed(ctx, zone, reasonSyncFailed, fmt.Sprintf("update zone: %s", err))
+		if poweradmin.IsNotFound(err) {
+			zone.Status.ZoneID = 0
+			if err := r.Status().Update(ctx, zone); err != nil {
+				return ctrl.Result{}, fmt.Errorf("reset after external deletion: %w", err)
+			}
+			return ctrl.Result{RequeueAfter: time.Second}, nil
+		}
+		return ctrl.Result{RequeueAfter: 5 * time.Minute}, r.setConditionFailed(ctx, zone, reasonSyncFailed, fmt.Sprintf("update zone: %s", err))
 	}
 
 	r.setConditionReady(zone, reasonSynced, "Zone synced successfully")
@@ -140,7 +148,7 @@ func (r *DNSZoneReconciler) reconcileUpdate(ctx context.Context, zone *dnsv1alph
 	if err := r.Status().Update(ctx, zone); err != nil {
 		return ctrl.Result{}, fmt.Errorf("update status after update: %w", err)
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
 func (r *DNSZoneReconciler) reconcileDelete(ctx context.Context, zone *dnsv1alpha1.DNSZone, paClient *poweradmin.Client) (ctrl.Result, error) {
