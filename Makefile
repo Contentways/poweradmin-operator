@@ -267,4 +267,4 @@ $(HELMIFY): $(LOCALBIN)
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir
-	sed -i 's/^name: chart$$/name: poweradmin-operator/' chart/Chart.yaml
+	sed -i 's/^name: chart$$/name: poweradmin-operator-chart/' chart/Chart.yaml
