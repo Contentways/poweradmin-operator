@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 )
 
 // MockRecordClient is a mock implementation of poweradmin.IRecordClient.
@@ -29,7 +29,7 @@ type MockRecordClient struct {
 	mock.Mock
 }
 
-func (m *MockRecordClient) GetByID(ctx context.Context, zoneID int, recordID int64) (*poweradmin.Record, *poweradmin.Response, error) {
+func (m *MockRecordClient) GetByID(ctx context.Context, zoneID int, recordID string) (*poweradmin.Record, *poweradmin.Response, error) {
 	args := m.Called(ctx, zoneID, recordID)
 	if args.Get(0) == nil {
 		return nil, nil, args.Error(2)
@@ -47,12 +47,12 @@ func (m *MockRecordClient) All(ctx context.Context, zoneID int) ([]*poweradmin.R
 	return args.Get(0).([]*poweradmin.Record), args.Error(1)
 }
 
-func (m *MockRecordClient) Create(ctx context.Context, zoneID int, opts poweradmin.RecordCreateOpts) (int64, *poweradmin.Response, error) {
+func (m *MockRecordClient) Create(ctx context.Context, zoneID int, opts poweradmin.RecordCreateOpts) (string, *poweradmin.Response, error) {
 	args := m.Called(ctx, zoneID, opts)
-	return args.Get(0).(int64), nil, args.Error(2)
+	return args.Get(0).(string), nil, args.Error(2)
 }
 
-func (m *MockRecordClient) Update(ctx context.Context, zoneID int, recordID int64, opts poweradmin.RecordUpdateOpts) (*poweradmin.Record, *poweradmin.Response, error) {
+func (m *MockRecordClient) Update(ctx context.Context, zoneID int, recordID string, opts poweradmin.RecordUpdateOpts) (*poweradmin.Record, *poweradmin.Response, error) {
 	args := m.Called(ctx, zoneID, recordID, opts)
 	if args.Get(0) == nil {
 		return nil, nil, args.Error(2)
@@ -60,7 +60,7 @@ func (m *MockRecordClient) Update(ctx context.Context, zoneID int, recordID int6
 	return args.Get(0).(*poweradmin.Record), nil, args.Error(2)
 }
 
-func (m *MockRecordClient) Delete(ctx context.Context, zoneID int, recordID int64) (*poweradmin.Response, error) {
+func (m *MockRecordClient) Delete(ctx context.Context, zoneID int, recordID string) (*poweradmin.Response, error) {
 	args := m.Called(ctx, zoneID, recordID)
 	return nil, args.Error(1)
 }

@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
 )
 
@@ -83,7 +83,7 @@ func (r *DNSRecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, r.setConditionFailed(ctx, record, "ZoneNotFound", fmt.Sprintf("resolve zone %s: %s", record.Spec.ZoneName, err))
 	}
 
-	if record.Status.RecordID == 0 {
+	if record.Status.RecordID == "" {
 		log.Info("Creating record in Poweradmin", "zone", record.Spec.ZoneName, "name", record.Spec.Name, "type", record.Spec.Type)
 		return r.reconcileCreate(ctx, record, zoneID, paClient)
 	}
@@ -105,7 +105,7 @@ func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1
 		return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonSyncFailed, fmt.Sprintf("create record: %s", err))
 	}
 
-	record.Status.RecordID = int(id)
+	record.Status.RecordID = id
 	record.Status.ZoneID = zoneID
 	r.setConditionReady(record, reasonSynced, "Record created successfully")
 
@@ -116,7 +116,7 @@ func (r *DNSRecordReconciler) reconcileCreate(ctx context.Context, record *dnsv1
 }
 
 func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {
-	_, _, err := paClient.Record.Update(ctx, record.Status.ZoneID, int64(record.Status.RecordID), poweradmin.RecordUpdateOpts{
+	_, _, err := paClient.Record.Update(ctx, record.Status.ZoneID, record.Status.RecordID, poweradmin.RecordUpdateOpts{
 		Name:    record.Spec.Name,
 		Type:    record.Spec.Type,
 		Content: record.Spec.Content,
@@ -124,7 +124,7 @@ func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1
 	})
 	if err != nil {
 		if poweradmin.IsNotFound(err) {
-			record.Status.RecordID = 0
+			record.Status.RecordID = ""
 			record.Status.ZoneID = 0
 			if err := r.Status().Update(ctx, record); err != nil {
 				return ctrl.Result{}, fmt.Errorf("reset after external deletion: %w", err)
@@ -145,9 +145,9 @@ func (r *DNSRecordReconciler) reconcileUpdate(ctx context.Context, record *dnsv1
 func (r *DNSRecordReconciler) reconcileDelete(ctx context.Context, record *dnsv1alpha1.DNSRecord, paClient *poweradmin.Client) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
-	if record.Status.RecordID != 0 {
+	if record.Status.RecordID != "" {
 		log.Info("Deleting record from Poweradmin", "name", record.Spec.Name, "id", record.Status.RecordID)
-		_, err := paClient.Record.Delete(ctx, record.Status.ZoneID, int64(record.Status.RecordID))
+		_, err := paClient.Record.Delete(ctx, record.Status.ZoneID, record.Status.RecordID)
 		if err != nil && !poweradmin.IsNotFound(err) {
 			return ctrl.Result{}, r.setConditionFailed(ctx, record, reasonDeleteFailed, fmt.Sprintf("delete record: %s", err))
 		}

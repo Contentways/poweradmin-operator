@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "chart.fullname" . }}-dnsrecord-admin-role
+  labels:
+  {{- include "chart.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - dns.contentways.org
+  resources:
+  - dnsrecords
+  verbs:
+  - '*'
+- apiGroups:
+  - dns.contentways.org
+  resources:
+  - dnsrecords/status
+  verbs:
+  - get

@@ -11,7 +11,7 @@ repos:
       - id: destroyed-symlinks
       - id: check-json
       - id: check-yaml
-        exclude: ^(charts/|config/manager/)
+        exclude: ^chart/templates/
       - id: check-toml
       - id: check-merge-conflict
       - id: end-of-file-fixer
