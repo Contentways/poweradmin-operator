@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.0](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.1.0)
+
+### Features
+
+- several Improvements
+
 ## [v1.0.4](https://github.com/Contentways/poweradmin-operator/releases/tag/v1.0.4)
 
 ### Bug Fixes
