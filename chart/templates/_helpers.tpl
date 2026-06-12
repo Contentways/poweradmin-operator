@@ -1,14 +1,16 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "poweradmin-operator.name" -}}
+{{- define "chart.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
 */}}
-{{- define "poweradmin-operator.fullname" -}}
+{{- define "chart.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -22,18 +24,18 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{/*
-Create chart label.
+Create chart name and version as used by the chart label.
 */}}
-{{- define "poweradmin-operator.chart" -}}
+{{- define "chart.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
-Common labels.
+Common labels
 */}}
-{{- define "poweradmin-operator.labels" -}}
-helm.sh/chart: {{ include "poweradmin-operator.chart" . }}
-{{ include "poweradmin-operator.selectorLabels" . }}
+{{- define "chart.labels" -}}
+helm.sh/chart: {{ include "chart.chart" . }}
+{{ include "chart.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -41,20 +43,23 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels.
+Selector labels
 */}}
-{{- define "poweradmin-operator.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "poweradmin-operator.name" . }}
+{{- define "chart.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-ServiceAccount name.
+Create the name of the service account to use
 */}}
-{{- define "poweradmin-operator.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "poweradmin-operator.fullname" .) .Values.serviceAccount.name }}
+{{- define "chart.serviceAccountName" -}}
+{{- $default := (include "chart.fullname" .) }}
+{{- with .Values.serviceAccount }}
+{{- if .create }}
+{{- default $default .name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .name }}
+{{- end }}
 {{- end }}
 {{- end }}

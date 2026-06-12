@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,13 +59,13 @@ var _ = Describe("DNSZoneReconciler", func() {
 				Type:    "NS",
 				Content: "ns1.example.org",
 				TTL:     3600,
-			}).Return(int64(1), nil, nil)
+			}).Return("rec-1", nil, nil)
 			mockRecord.On("Create", mock.Anything, 42, poweradmin.RecordCreateOpts{
 				Name:    "test-create.example.org",
 				Type:    "NS",
 				Content: "ns2.example.org",
 				TTL:     3600,
-			}).Return(int64(2), nil, nil)
+			}).Return("rec-2", nil, nil)
 
 			zone := &dnsv1alpha1.DNSZone{
 				ObjectMeta: metav1.ObjectMeta{
@@ -107,13 +107,13 @@ var _ = Describe("DNSZoneReconciler", func() {
 				Type:    "NS",
 				Content: "ns1.example.org",
 				TTL:     3600,
-			}).Return(int64(1), nil, nil)
+			}).Return("rec-1", nil, nil)
 			mockRecord.On("Create", mock.Anything, 99, poweradmin.RecordCreateOpts{
 				Name:    "test-delete.example.org",
 				Type:    "NS",
 				Content: "ns2.example.org",
 				TTL:     3600,
-			}).Return(int64(2), nil, nil)
+			}).Return("rec-2", nil, nil)
 
 			zone := &dnsv1alpha1.DNSZone{
 				ObjectMeta: metav1.ObjectMeta{

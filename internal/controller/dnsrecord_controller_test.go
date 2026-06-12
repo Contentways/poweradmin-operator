@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
 )
 
@@ -59,7 +59,7 @@ var _ = Describe("DNSRecordReconciler", func() {
 				Type:    "A",
 				Content: "1.2.3.4",
 				TTL:     3600,
-			}).Return(int64(100), nil, nil)
+			}).Return("rec-100", nil, nil)
 			mockRecord.On("Update", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&poweradmin.Record{}, nil, nil).Maybe()
 			mockRecord.On("Delete", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 
@@ -78,11 +78,11 @@ var _ = Describe("DNSRecordReconciler", func() {
 			}
 			Expect(k8sClient.Create(context.Background(), record)).To(Succeed())
 
-			Eventually(func() int {
+			Eventually(func() string {
 				updated := &dnsv1alpha1.DNSRecord{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-create", Namespace: "default"}, updated)
 				return updated.Status.RecordID
-			}, timeout, interval).Should(Equal(100))
+			}, timeout, interval).Should(Equal("rec-100"))
 
 			updated := &dnsv1alpha1.DNSRecord{}
 			Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-create", Namespace: "default"}, updated)).To(Succeed())
@@ -97,9 +97,9 @@ var _ = Describe("DNSRecordReconciler", func() {
 	Context("when deleting a DNSRecord", func() {
 		It("should delete the record from Poweradmin and remove the finalizer", func() {
 			mockZone.On("GetByName", mock.Anything, "contentways.org").Return(&poweradmin.Zone{ID: 4}, nil, nil)
-			mockRecord.On("Create", mock.Anything, 4, mock.Anything).Return(int64(200), nil, nil)
+			mockRecord.On("Create", mock.Anything, 4, mock.Anything).Return("rec-200", nil, nil)
 			mockRecord.On("Update", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&poweradmin.Record{}, nil, nil).Maybe()
-			mockRecord.On("Delete", mock.Anything, 4, int64(200)).Return(nil, nil)
+			mockRecord.On("Delete", mock.Anything, 4, "rec-200").Return(nil, nil)
 
 			record := &dnsv1alpha1.DNSRecord{
 				ObjectMeta: metav1.ObjectMeta{
@@ -116,11 +116,11 @@ var _ = Describe("DNSRecordReconciler", func() {
 			}
 			Expect(k8sClient.Create(context.Background(), record)).To(Succeed())
 
-			Eventually(func() int {
+			Eventually(func() string {
 				updated := &dnsv1alpha1.DNSRecord{}
 				_ = k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-delete", Namespace: "default"}, updated)
 				return updated.Status.RecordID
-			}, timeout, interval).Should(Equal(200))
+			}, timeout, interval).Should(Equal("rec-200"))
 
 			updated := &dnsv1alpha1.DNSRecord{}
 			Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-delete", Namespace: "default"}, updated)).To(Succeed())
@@ -130,7 +130,7 @@ var _ = Describe("DNSRecordReconciler", func() {
 				return k8sClient.Get(context.Background(), types.NamespacedName{Name: "test-record-delete", Namespace: "default"}, &dnsv1alpha1.DNSRecord{})
 			}, timeout, interval).Should(MatchError(ContainSubstring("not found")))
 
-			mockRecord.AssertCalled(GinkgoT(), "Delete", mock.Anything, 4, int64(200))
+			mockRecord.AssertCalled(GinkgoT(), "Delete", mock.Anything, 4, "rec-200")
 		})
 	})
 })

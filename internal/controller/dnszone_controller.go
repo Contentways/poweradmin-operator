@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 	dnsv1alpha1 "contentways.dev/contentways/poweradmin-operator/api/v1alpha1"
 )
 

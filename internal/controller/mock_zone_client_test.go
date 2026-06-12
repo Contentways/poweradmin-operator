@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	poweradmin "contentways.dev/contentways/poweradmin-go/poweradmin"
+	poweradmin "contentways.dev/contentways/poweradmin-go/v2/poweradmin"
 )
 
 // MockZoneClient is a mock implementation of poweradmin.IZoneClient.
