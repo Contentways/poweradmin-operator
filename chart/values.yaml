@@ -41,3 +41,4 @@ serviceAccount:
   automount: true
   create: true
   name: ""
+nameOverride: "poweradmin-operator"

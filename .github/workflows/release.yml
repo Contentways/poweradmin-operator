@@ -46,4 +46,4 @@ jobs:
       - name: Package and push Helm chart
         run: |
           helm package chart --version ${{ steps.tag.outputs.version }} --app-version ${{ steps.tag.outputs.version }}
-          helm push poweradmin-operator-${{ steps.tag.outputs.version }}.tgz oci://registry-1.docker.io/contentwaysorg/poweradmin-operator-chart
+          helm push poweradmin-operator-${{ steps.tag.outputs.version }}.tgz oci://registry-1.docker.io/contentwaysorg
