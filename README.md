@@ -22,7 +22,7 @@ A Kubernetes operator for managing DNS zones and records via
 ### Install via Helm
 
 ```sh
-helm install poweradmin-operator oci://ghcr.io/contentways/charts/poweradmin-operator \
+helm install poweradmin-operator oci://registry-1.docker.io/contentwaysorg/poweradmin-operator-chart \
   --namespace poweradmin-operator \
   --create-namespace
 ```
@@ -129,15 +129,15 @@ www-example-org   example.org  www    A      1.2.3.4   3600   True
 
 ## Helm Values
 
-| Value                              | Default                                   | Description                          |
-| ---------------------------------- | ----------------------------------------- | ------------------------------------ |
-| `image.repository`                 | `ghcr.io/contentways/poweradmin-operator` | Container image                      |
-| `image.tag`                        | Chart appVersion                          | Image tag                            |
-| `poweradmin.credentialsSecretName` | `poweradmin-credentials`                  | Secret name to look up per namespace |
-| `replicaCount`                     | `1`                                       | Number of operator replicas          |
-| `leaderElection.enabled`           | `false`                                   | Enable leader election for HA        |
-| `crds.install`                     | `true`                                    | Install CRDs as Helm hooks           |
-| `metrics.enabled`                  | `true`                                    | Expose Prometheus metrics            |
+| Value                              | Default                                       | Description                          |
+| ---------------------------------- | --------------------------------------------- | ------------------------------------ |
+| `image.repository`                 | `contentwaysorg/poweradmin-operator`          | Container image                      |
+| `image.tag`                        | Chart appVersion                              | Image tag                            |
+| `poweradmin.credentialsSecretName` | `poweradmin-credentials`                      | Secret name to look up per namespace |
+| `replicaCount`                     | `1`                                            | Number of operator replicas          |
+| `leaderElection.enabled`           | `false`                                        | Enable leader election for HA        |
+| `crds.install`                     | `true`                                         | Install CRDs as Helm hooks           |
+| `metrics.enabled`                  | `true`                                         | Expose Prometheus metrics            |
 
 ## Multi-tenancy
 
