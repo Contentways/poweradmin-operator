@@ -268,3 +268,6 @@ $(HELMIFY): $(LOCALBIN)
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir
 	sed -i 's/^name: chart$$/name: poweradmin-operator-chart/' chart/Chart.yaml
+	sed -i 's/repository: controller$$/repository: contentwaysorg\/poweradmin-operator/' chart/values.yaml
+	echo '' >> chart/values.yaml
+	echo 'nameOverride: "poweradmin-operator"' >> chart/values.yaml

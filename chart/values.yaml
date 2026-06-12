@@ -11,8 +11,8 @@ controllerManager:
         - ALL
       readOnlyRootFilesystem: true
     image:
-      repository: controller
-      tag: latest
+      repository: contentwaysorg/poweradmin-operator
+      tag: ""
     resources:
       limits:
         cpu: 500m
